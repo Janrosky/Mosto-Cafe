@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MOSTO — Mesa, Fuego & Origen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:         #faf7f2;
+      --bg-alt:     #f2ece3;
+      --surface:    #ffffff;
+      --surface-border: rgba(44,24,16,0.10);
+      --fg:         #1e130e;
+      --fg-muted:   #7a6254;
+      --accent:     #c9913a;
+      --accent-rgb: 201,145,58;
+      --accent-deep: #8f5e1a;
+      --radius:     12px;
+      --radius-lg:  20px;
+      --shadow:     0 4px 24px rgba(44,24,16,0.08);
+      --shadow-lg:  0 12px 48px rgba(44,24,16,0.14);
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --nav-h: 72px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; cursor: none !important; }
+    html { scroll-behavior: auto; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── CURSOR ── */
+    #c-dot {
+      width: 10px; height: 10px;
+      background: #fff;
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 99999;
+      mix-blend-mode: exclusion;
+      transform: translate(-50%, -50%);
+      will-change: transform;
+    }
+    #c-ring {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 99998;
+      transform: translate(-50%, -50%);
+      background: transparent;
+      border: 1.5px solid rgba(0,0,0,0.25);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6), 0 0 12px rgba(255,255,255,0.12);
+      will-change: transform;
+      transition: width 0.35s cubic-bezier(.34,1.56,.64,1),
+                  height 0.35s cubic-bezier(.34,1.56,.64,1),
+                  background 0.3s, border-color 0.3s, border-radius 0.3s;
+    }
+    body.hovering #c-ring { width: 58px; height: 58px; border-color: rgba(201,145,58,0.5); background: rgba(201,145,58,0.08); }
+    body.clicking #c-dot  { transform: translate(-50%,-50%) scale(0.5); }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      transition: background 0.4s, backdrop-filter 0.4s, box-shadow 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(250,247,242,0.88);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 1px 0 var(--surface-border);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.6rem; font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--fg);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+    .nav-links a { font-size: 0.88rem; font-weight: 500; color: var(--fg-muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.25s; }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-cta {
+      background: var(--fg); color: var(--bg);
+      padding: 10px 24px; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 600;
+      text-decoration: none; letter-spacing: 0.04em;
+      transition: background 0.25s, transform 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      position: relative; overflow: hidden;
+      padding: 0 5%; padding-top: var(--nav-h);
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 50%, rgba(201,145,58,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(201,145,58,0.05) 0%, transparent 60%),
+        var(--bg);
+      z-index: 0;
+    }
+    .hero-deco {
+      position: absolute; right: 6%; top: 50%;
+      transform: translateY(-50%);
+      width: min(480px, 45vw);
+      aspect-ratio: 3/4;
+      border-radius: 999px 999px 0 0;
+      overflow: hidden;
+      z-index: 1;
+      box-shadow: var(--shadow-lg);
+    }
+    .hero-deco-inner {
+      width: 100%; height: 100%;
+      background:
+        linear-gradient(160deg, rgba(201,145,58,0.18) 0%, rgba(44,24,16,0.06) 100%),
+        repeating-linear-gradient(
+          45deg,
+          rgba(201,145,58,0.04) 0px,
+          rgba(201,145,58,0.04) 1px,
+          transparent 1px, transparent 20px
+        );
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-plate {
+      width: 78%; aspect-ratio: 1;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #faf0e0 0%, #e8d5b7 50%, #d4b896 100%);
+      box-shadow:
+        0 20px 60px rgba(44,24,16,0.2),
+        inset 0 2px 8px rgba(255,255,255,0.8),
+        inset 0 -4px 12px rgba(44,24,16,0.08);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-plate::after {
+      content: '';
+      position: absolute; inset: 8px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.5);
+    }
+    .hero-plate-text {
+      font-family: var(--font-display);
+      font-size: 4rem; font-weight: 400;
+      color: rgba(44,24,16,0.15);
+      font-style: italic;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-content { position: relative; z-index: 2; max-width: 580px; }
+    .hero-eyebrow {
+      font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1.4rem;
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .hero-eyebrow::before { content:''; width:32px; height:1px; background:var(--accent); display:block; }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3.2rem, 6vw, 5.4rem);
+      font-weight: 500; line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.6rem;
+      overflow: hidden;
+    }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-sub {
+      font-size: 1.05rem; font-weight: 300;
+      color: var(--fg-muted); line-height: 1.7;
+      max-width: 440px; margin-bottom: 2.4rem;
+    }
+    .hero-actions { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border-radius: 999px;
+      font-family: var(--font-body); font-weight: 600;
+      font-size: 0.9rem; border: none; text-decoration: none;
+      transition: all 0.25s ease; letter-spacing: 0.03em;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(var(--accent-rgb),0.35); }
+    .btn-primary:hover { box-shadow: 0 8px 32px rgba(var(--accent-rgb),0.5); transform: translateY(-2px); }
+    .btn-outline { background: transparent; color: var(--fg); border: 1.5px solid var(--surface-border); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost { background: transparent; color: var(--fg-muted); font-weight: 400; }
+    .btn-ghost:hover { color: var(--accent); }
+
+    .hero-stats {
+      margin-top: 3.5rem; padding-top: 2rem;
+      border-top: 1px solid var(--surface-border);
+      display: flex; gap: 2.4rem; flex-wrap: wrap;
+    }
+    .stat-item {}
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 2.2rem; font-weight: 600;
+      color: var(--fg); line-height: 1;
+    }
+    .stat-label { font-size: 0.78rem; color: var(--fg-muted); margin-top: 4px; font-weight: 400; }
+
+    /* ── SECTION SHARED ── */
+    section { padding: 7rem 5%; }
+    .section-eyebrow {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1rem;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 500; line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.2rem;
+    }
+    .section-title em { font-style: italic; color: var(--accent); }
+    .section-sub {
+      font-size: 1rem; color: var(--fg-muted);
+      line-height: 1.7; max-width: 480px;
+    }
+    .section-header { max-width: 560px; }
+
+    /* ── MENU SECTION ── */
+    .menu-section { background: var(--bg-alt); }
+    .menu-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; flex-wrap: wrap; gap: 1.5rem; }
+
+    .tabs { display: flex; gap: 0; background: var(--surface); border-radius: 999px; padding: 5px; position: relative; border: 1px solid var(--surface-border); width: fit-content; }
+    .tab {
+      padding: 9px 22px; border-radius: 999px;
+      font-size: 0.83rem; font-weight: 500;
+      color: var(--fg-muted); background: transparent;
+      border: none; transition: color 0.25s; position: relative; z-index: 1;
+    }
+    .tab.active { color: var(--fg); }
+    .tab-indicator {
+      position: absolute; top: 5px; bottom: 5px; left: 5px;
+      background: var(--surface);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s cubic-bezier(.34,1.1,.64,1);
+      z-index: 0;
+      border: 1px solid var(--surface-border);
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.6rem;
+    }
+    .menu-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid var(--surface-border);
+    }
+    .menu-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .menu-card-img {
+      height: 200px;
+      background: linear-gradient(135deg, var(--bg-alt) 0%, rgba(201,145,58,0.15) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 3rem; transition: transform 0.5s ease;
+      position: relative; overflow: hidden;
+    }
+    .menu-card:hover .menu-card-img { transform: scale(1.04); }
+    .menu-card-img .price-tag {
+      position: absolute; top: 14px; right: 14px;
+      background: var(--accent); color: #fff;
+      font-family: var(--font-body); font-size: 0.82rem; font-weight: 600;
+      padding: 5px 12px; border-radius: 999px;
+    }
+    .menu-card-body { padding: 1.4rem 1.6rem 1.6rem; }
+    .menu-card-body h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem; font-weight: 600; margin-bottom: 6px;
+    }
+    .menu-card-body p { font-size: 0.85rem; color: var(--fg-muted); line-height: 1.6; }
+    .menu-card-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+
+    /* ── ABOUT / STORY ── */
+    .story-section { background: var(--bg); }
+    .story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
+    .story-visual {
+      position: relative; aspect-ratio: 4/5; border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: linear-gradient(145deg, rgba(201,145,58,0.12) 0%, rgba(44,24,16,0.06) 100%);
+      box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .story-visual::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(0deg, rgba(201,145,58,0.03) 0px, rgba(201,145,58,0.03) 1px, transparent 1px, transparent 40px),
+        repeating-linear-gradient(90deg, rgba(201,145,58,0.03) 0px, rgba(201,145,58,0.03) 1px, transparent 1px, transparent 40px);
+    }
+    .story-visual-inner {
+      text-align: center; z-index: 1; padding: 2rem;
+    }
+    .story-big-num {
+      font-family: var(--font-display);
+      font-size: 8rem; font-weight: 600;
+      color: rgba(201,145,58,0.15);
+      line-height: 1; display: block;
+    }
+    .story-badge {
+      display: inline-block; margin-top: 1rem;
+      background: var(--accent); color: #fff;
+      font-size: 0.8rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 8px 20px; border-radius: 999px;
+    }
+    .story-text {}
+    .story-text blockquote {
+      font-family: var(--font-display);
+      font-size: 1.5rem; font-style: italic; line-height: 1.5;
+      color: var(--fg-muted); margin: 2rem 0;
+      padding-left: 1.5rem;
+      border-left: 3px solid var(--accent);
+    }
+    .story-text p { font-size: 0.97rem; color: var(--fg-muted); line-height: 1.8; margin-bottom: 1rem; }
+
+    /* ── EXPERIENCE / AMBIANCE ── */
+    .experience-section { background: var(--fg); color: var(--bg); }
+    .experience-section .section-eyebrow { color: var(--accent); }
+    .experience-section .section-title { color: var(--bg); }
+    .experience-section .section-sub { color: rgba(250,247,242,0.6); }
+    .exp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3.5rem; }
+    .exp-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-lg);
+      padding: 2.4rem 2rem;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .exp-card:hover { background: rgba(201,145,58,0.1); transform: translateY(-4px); }
+    .exp-icon {
+      font-size: 2.2rem; margin-bottom: 1.2rem; display: block;
+    }
+    .exp-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem; font-weight: 500;
+      margin-bottom: 0.7rem; color: #faf7f2;
+    }
+    .exp-card p { font-size: 0.88rem; color: rgba(250,247,242,0.55); line-height: 1.7; }
+
+    /* ── GALLERY ── */
+    .gallery-section { background: var(--bg-alt); padding-bottom: 0; }
+    .gallery-scroll {
+      display: flex; gap: 1.2rem; overflow-x: auto;
+      padding: 2rem 5% 4rem;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .gallery-scroll::-webkit-scrollbar { display: none; }
+    .gallery-item {
+      flex: 0 0 auto;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: linear-gradient(135deg, rgba(201,145,58,0.12) 0%, rgba(44,24,16,0.08) 100%);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.4s;
+    }
+    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item.tall { width: 280px; height: 380px; }
+    .gallery-item.wide { width: 380px; height: 260px; }
+    .gallery-item.sq   { width: 260px; height: 260px; }
+    .gallery-item span { font-size: 3.5rem; }
+
+    /* ── RESERVATION CTA ── */
+    .reserve-section {
+      background: linear-gradient(135deg, #faf0e0 0%, #f5e6cc 100%);
+      text-align: center;
+    }
+    .reserve-inner { max-width: 640px; margin: 0 auto; }
+    .reserve-section .section-title { max-width: 100%; }
+    .reserve-section .section-sub { margin: 0 auto 2.5rem; }
+    .reserve-form {
+      display: flex; gap: 1rem; flex-wrap: wrap;
+      justify-content: center; margin-top: 2rem;
+    }
+    .form-field {
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-family: var(--font-body); font-size: 0.9rem;
+      color: var(--fg); outline: none;
+      transition: border-color 0.25s;
+      width: 190px;
+    }
+    .form-field:focus { border-color: var(--accent); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--fg);
+      color: rgba(250,247,242,0.5);
+      padding: 4rem 5% 2rem;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem; margin-bottom: 3rem;
+    }
+    .footer-brand .nav-logo { color: var(--bg); }
+    .footer-brand p { font-size: 0.85rem; line-height: 1.7; margin-top: 1rem; }
+    footer h4 {
+      font-family: var(--font-display); font-size: 0.95rem; font-weight: 600;
+      color: #faf7f2; margin-bottom: 1.2rem; letter-spacing: 0.02em;
+    }
+    footer ul { list-style: none; }
+    footer ul li { margin-bottom: 0.6rem; }
+    footer ul a { font-size: 0.85rem; color: rgba(250,247,242,0.45); text-decoration: none; transition: color 0.2s; }
+    footer ul a:hover { color: var(--accent); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.78rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-accent { color: var(--accent); }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: var(--surface-border); }
+
+    /* ── ANIMATIONS ── */
+    .hero-word { display: inline-block; overflow: hidden; }
+    .hero-word-inner { display: inline-block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .story-grid { grid-template-columns: 1fr; }
+      .exp-grid { grid-template-columns: 1fr 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .hero-deco { display: none; }
+      .hero-content { max-width: 100%; }
+    }
+    @media (max-width: 600px) {
+      *, *::before, *::after { cursor: auto !important; }
+      #c-dot, #c-ring { display: none; }
+      .nav-links { display: none; }
+      .exp-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .menu-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="c-dot"></div>
+  <div id="c-ring"></div>
+
+  <!-- NAV -->
+  <nav id="main-nav">
+    <a href="#" class="nav-logo">MOST<span>O</span></a>
+    <ul class="nav-links">
+      <li><a href="#menu">Menú</a></li>
+      <li><a href="#historia">Historia</a></li>
+      <li><a href="#galeria">Galería</a></li>
+      <li><a href="#reservar">Ubicación</a></li>
+    </ul>
+    <a href="#reservar" class="nav-cta magnetic">Reservar Mesa</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="inicio">
+    <div class="hero-bg"></div>
+    <div class="hero-deco mouse-layer-2">
+      <div class="hero-deco-inner">
+        <div class="hero-plate">
+          <span class="hero-plate-text">M</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-content mouse-layer-1">
+      <p class="hero-eyebrow">Cocina de Autor · Cartago</p>
+      <h1 class="hero-title">
+        Donde el <em>fuego</em><br>habla por<br>los ingredientes
+      </h1>
+      <p class="hero-sub hero-sub-anim">
+        Cocina viva, ingredientes de origen local y una mesa que convierte cada visita en un recuerdo.
+      </p>
+      <div class="hero-actions hero-cta">
+        <a href="#reservar" class="btn btn-primary magnetic">Reservar Mesa →</a>
+        <a href="#menu" class="btn btn-outline magnetic">Ver Menú</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-num counter" data-target="7">0</div>
+          <div class="stat-label">Años de historia</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num counter" data-target="340">0</div>
+          <div class="stat-label">Reseñas 5 estrellas</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num counter" data-target="28">0</div>
+          <div class="stat-label">Platos de temporada</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MENU -->
+  <section class="menu-section" id="menu">
+    <div class="menu-top">
+      <div class="section-header reveal">
+        <p class="section-eyebrow">Nuestra Propuesta</p>
+        <h2 class="section-title">Sabores de <em>temporada</em></h2>
+      </div>
+      <div class="tabs reveal" id="menu-tabs">
+        <div class="tab-indicator" id="tab-indicator"></div>
+        <button class="tab active">Entradas</button>
+        <button class="tab">Principales</button>
+        <button class="tab">Postres</button>
+        <button class="tab">Bebidas</button>
+      </div>
+    </div>
+
+    <div class="menu-grid" id="menu-grid"></div>
+  </section>
+
+  <!-- STORY -->
+  <section class="story-section" id="historia">
+    <div class="story-grid">
+      <div class="story-visual reveal-left">
+        <div class="story-visual-inner">
+          <span class="story-big-num">VII</span>
+          <p style="font-family:var(--font-display);font-style:italic;color:rgba(201,145,58,0.5);font-size:1.1rem;">años de fuego</p>
+          <span class="story-badge">Fundado en 2018</span>
+        </div>
+      </div>
+      <div class="story-text reveal-right">
+        <p class="section-eyebrow">Nuestra Historia</p>
+        <h2 class="section-title">Una cocina nacida<br>del <em>origen</em></h2>
+        <blockquote>"El mejor ingrediente no se compra. Se conoce, se cultiva, se respeta."</blockquote>
+        <p>MOSTO nació de una obsesión sencilla: llevar a la mesa productos de agricultores locales de Cartago y el Valle Central, tratados con técnicas que resaltan, no disfrazan, su naturaleza.</p>
+        <p>Cada plato cuenta la historia de la tierra que lo produjo. Cada temporada renueva el menú. Cada visita es distinta a la anterior.</p>
+        <a href="#reservar" class="btn btn-primary magnetic" style="margin-top:1.5rem;">Conocernos →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="experience-section">
+    <div>
+      <p class="section-eyebrow">La Experiencia</p>
+      <h2 class="section-title reveal">Más que una cena,<br>un <em>momento</em></h2>
+    </div>
+    <div class="exp-grid">
+      <div class="exp-card reveal">
+        <span class="exp-icon">🔥</span>
+        <h3>Cocina a Leña</h3>
+        <p>Nuestro horno de barro y parrilla abierta le dan a cada plato ese aroma inimitable que ninguna técnica moderna replica.</p>
+      </div>
+      <div class="exp-card reveal">
+        <span class="exp-icon">🌿</span>
+        <h3>Ingredientes Locales</h3>
+        <p>Trabajamos directamente con más de 12 agricultores de la región. Sin intermediarios, con historias reales detrás de cada insumo.</p>
+      </div>
+      <div class="exp-card reveal">
+        <span class="exp-icon">🍷</span>
+        <h3>Maridaje Artesanal</h3>
+        <p>Carta de vinos naturales y fermentos locales seleccionados para complementar cada plato del menú de temporada.</p>
+      </div>
+      <div class="exp-card reveal">
+        <span class="exp-icon">🌙</span>
+        <h3>Ambiente Íntimo</h3>
+        <p>Solo 9 mesas. Reserva anticipada. Cada servicio es un evento curado donde el ritmo lo marca el comensal.</p>
+      </div>
+      <div class="exp-card reveal">
+        <span class="exp-icon">👨‍🍳</span>
+        <h3>Mesa del Chef</h3>
+        <p>Una vez al mes abrimos la cocina para una experiencia de degustación de 7 tiempos con el equipo culinario completo.</p>
+      </div>
+      <div class="exp-card reveal">
+        <span class="exp-icon">📜</span>
+        <h3>Menú Vivo</h3>
+        <p>El menú cambia con la temporada. Lo que hoy está en mesa mañana ya no, porque la frescura es nuestra única constante.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="gallery-section" id="galeria">
+    <div style="padding: 0 0 2rem 0;">
+      <p class="section-eyebrow reveal">Nuestra Mesa</p>
+      <h2 class="section-title reveal">Cada plato,<br>una <em>obra</em></h2>
+    </div>
+    <div class="gallery-scroll" id="gallery-scroll">
+      <div class="gallery-item tall"><span>🥩</span></div>
+      <div class="gallery-item sq"><span>🌿</span></div>
+      <div class="gallery-item wide"><span>🍽️</span></div>
+      <div class="gallery-item tall"><span>🥗</span></div>
+      <div class="gallery-item sq"><span>🍷</span></div>
+      <div class="gallery-item wide"><span>🔥</span></div>
+      <div class="gallery-item tall"><span>🍮</span></div>
+      <div class="gallery-item sq"><span>🌸</span></div>
+    </div>
+  </section>
+
+  <!-- RESERVATION CTA -->
+  <section class="reserve-section" id="reservar">
+    <div class="reserve-inner reveal">
+      <p class="section-eyebrow">Únete a la Mesa</p>
+      <h2 class="section-title">¿Listo para tu<br><em>próxima experiencia</em>?</h2>
+      <p class="section-sub">Cupos limitados. Reserva con anticipación y asegura tu lugar en la mesa.</p>
+      <div class="reserve-form">
+        <input type="text" class="form-field" placeholder="Tu nombre" />
+        <input type="date" class="form-field" />
+        <select class="form-field">
+          <option>2 personas</option>
+          <option>4 personas</option>
+          <option>6 personas</option>
+          <option>Mesa del Chef</option>
+        </select>
+        <button class="btn btn-primary magnetic" style="padding:14px 32px;font-size:0.9rem;">Reservar Ahora</button>
+      </div>
+      <p style="margin-top:1.5rem;font-size:0.8rem;color:var(--fg-muted);">
+        📍 Calle del Origen 14, Cartago Centro &nbsp;·&nbsp; 📞 +506 2200-0000 &nbsp;·&nbsp; Martes a Domingo, 12pm – 10pm
+      </p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo">MOST<span class="footer-accent">O</span></a>
+        <p>Cocina de autor con ingredientes locales.<br>Una experiencia que sabe a Costa Rica.</p>
+      </div>
+      <div>
+        <h4>Menú</h4>
+        <ul>
+          <li><a href="#">Entradas</a></li>
+          <li><a href="#">Principales</a></li>
+          <li><a href="#">Postres</a></li>
+          <li><a href="#">Bebidas</a></li>
+          <li><a href="#">Mesa del Chef</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Nosotros</h4>
+        <ul>
+          <li><a href="#">Historia</a></li>
+          <li><a href="#">El Equipo</a></li>
+          <li><a href="#">Proveedores</a></li>
+          <li><a href="#">Prensa</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Visítanos</h4>
+        <ul>
+          <li><a href="#">Reservaciones</a></li>
+          <li><a href="#">Eventos</a></li>
+          <li><a href="#">Contacto</a></li>
+          <li><a href="#">Instagram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 MOSTO. Todos los derechos reservados.</span>
+      <span>Hecho con fuego en <span class="footer-accent">Cartago, Costa Rica</span></span>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.0.45/dist/lenis.min.js"></script>
+  <script src="https://unpkg.com/split-type@0.3.4/umd/index.min.js"></script>
+
+  <script>
+    // ── MENU DATA ──
+    const menuData = {
+      Entradas: [
+        { emoji:'🥗', name:'Ensalada de temporada', desc:'Hojas del huerto, flores comestibles, aderezo de yuzu y aceite de macadamia.', tag:'Vegano', price:'₡5.900' },
+        { emoji:'🥚', name:'Huevo de campo 63°', desc:'Yema perfecta, espuma de hongos silvestres, crujiente de quinoa tostada.', tag:'Sin gluten', price:'₡6.500' },
+        { emoji:'🍞', name:'Pan de masa madre', desc:'Horneado diario con levadura de 5 años, mantequilla de hierbas ahumadas.', tag:'Artesanal', price:'₡3.800' },
+        { emoji:'🦐', name:'Ceviche de camarón', desc:'Camarón de Puntarenas, leche de tigre cítrica, maíz morado y ají amarillo.', tag:'Del día', price:'₡8.200' },
+      ],
+      Principales: [
+        { emoji:'🥩', name:'Lomo a la brasa', desc:'Corte de res local madurado 21 días, chimichurri de hierbas del jardín.', tag:'Signature', price:'₡18.500' },
+        { emoji:'🐟', name:'Tilapia al horno de barro', desc:'Tilapia de acuicultura local con costra de especias, puré de plátano maduro.', tag:'Del mar', price:'₡14.900' },
+        { emoji:'🌽', name:'Risotto de chiverre', desc:'Arroz cremoso con chiverre caramelizado, parmesano y trufa local.', tag:'Vegetariano', price:'₡12.400' },
+        { emoji:'🍗', name:'Pecho de pato confitado', desc:'72 horas de cocción lenta, cerezas silvestres, lenteja beluga y salsa de café.', tag:'Chef recomienda', price:'₡16.800' },
+      ],
+      Postres: [
+        { emoji:'🍮', name:'Flan de cajeta artesanal', desc:'Leche de vaca jersey local, cajeta de cabra, galleta de cacao y sal de mar.', tag:'Clásico', price:'₡4.900' },
+        { emoji:'🍫', name:'Coulant de chocolate 70%', desc:'Cacao de origen costarricense, centro líquido, helado de vainilla bourbon.', tag:'Indulgente', price:'₡5.600' },
+        { emoji:'🍓', name:'Fresas del volcán', desc:'Fresas de Tierra Blanca maceradas, crema chantilly, reducción de balsámico.', tag:'De temporada', price:'₡4.200' },
+        { emoji:'🧁', name:'Tarta de guanábana', desc:'Base de almendra, mousse de guanábana, gel de limón y flores de lavanda.', tag:'Sin lactosa', price:'₡5.100' },
+      ],
+      Bebidas: [
+        { emoji:'🍷', name:'Selección de vinos naturales', desc:'Carta rotativa de vinos sin intervención de pequeños productores europeos.', tag:'Importado', price:'Desde ₡4.500' },
+        { emoji:'🍺', name:'Fermentos locales', desc:'Kombuchas, kéfir de agua y sidra de manzana producidos por artesanos costarricenses.', tag:'Artesanal', price:'₡3.200' },
+        { emoji:'☕', name:'Café de especialidad', desc:'Origen único de la zona de Los Santos, preparado en método pour-over o espresso.', tag:'Costarricense', price:'₡2.800' },
+        { emoji:'🍹', name:'Cóctel de la casa', desc:'Destilado de caña artesanal, frutas de temporada, amargos y un secreto del bartender.', tag:'Signature', price:'₡7.500' },
+      ],
+    };
+
+    let currentCategory = 'Entradas';
+
+    function renderMenu(cat) {
+      const grid = document.getElementById('menu-grid');
+      grid.innerHTML = '';
+      menuData[cat].forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = 'menu-card';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(24px)';
+        card.innerHTML = `
+          <div class="menu-card-img">
+            ${item.emoji}
+            <span class="price-tag">${item.price}</span>
+          </div>
+          <div class="menu-card-body">
+            <div class="menu-card-tag">${item.tag}</div>
+            <h3>${item.name}</h3>
+            <p>${item.desc}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+        setTimeout(() => {
+          gsap.to(card, { opacity:1, y:0, duration:0.5, delay: i * 0.07, ease:'power3.out' });
+        }, 50);
+      });
+    }
+
+    // ── TABS ──
+    function initTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      const indicator = document.getElementById('tab-indicator');
+      const keys = Object.keys(menuData);
+
+      function moveIndicator(tab) {
+        const tabsEl = tab.closest('.tabs');
+        const r = tab.getBoundingClientRect();
+        const pr = tabsEl.getBoundingClientRect();
+        gsap.to(indicator, { x: r.left - pr.left - 5, width: r.width, duration:0.35, ease:'power2.inOut' });
+      }
+
+      tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          moveIndicator(tab);
+          currentCategory = keys[i];
+          renderMenu(currentCategory);
+        });
+      });
+
+      // init indicator
+      setTimeout(() => {
+        if (tabs[0]) moveIndicator(tabs[0]);
+      }, 100);
+    }
+
+    // ── CURSOR ──
+    const dot = document.getElementById('c-dot');
+    const ring = document.getElementById('c-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      mx = e.clientX; my = e.clientY;
+      gsap.to(dot, { x: mx, y: my, duration: 0.1, ease:'none' });
+    });
+
+    gsap.ticker.add(() => {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      gsap.set(ring, { x: rx, y: ry });
+    });
+
+    document.querySelectorAll('a, button, .menu-card, .exp-card, .gallery-item, .tab').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+    });
+    document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
+    document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
+
+    // ── LENIS ──
+    const lenis = new Lenis({ lerp: 0.08 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+
+    // ── NAV ──
+    function initNav() {
+      const nav = document.getElementById('main-nav');
+      ScrollTrigger.create({
+        start: 80,
+        onEnter: () => nav.classList.add('scrolled'),
+        onLeaveBack: () => nav.classList.remove('scrolled'),
+      });
+    }
+
+    // ── HERO ANIMATION ──
+    function initHero() {
+      const title = document.querySelector('.hero-title');
+      if (!title) return;
+      const st = new SplitType(title, { types: 'words' });
+      gsap.from(st.words, {
+        y: 80, opacity:0, rotateX:-60,
+        stagger:0.07, duration:1.1, ease:'power4.out', delay:0.3,
+        transformOrigin:'0% 50% -80px'
+      });
+      gsap.from('.hero-eyebrow', { y:20, opacity:0, duration:0.8, ease:'power3.out', delay:0.2 });
+      gsap.from('.hero-sub-anim', { y:20, opacity:0, duration:0.8, ease:'power3.out', delay:0.8 });
+      gsap.from('.hero-cta', { y:20, opacity:0, duration:0.6, ease:'power3.out', delay:1.1 });
+      gsap.from('.hero-stats', { y:20, opacity:0, duration:0.7, ease:'power3.out', delay:1.3 });
+      gsap.from('.hero-deco', { scale:0.9, opacity:0, duration:1.4, ease:'power3.out', delay:0.5 });
+    }
+
+    // ── SCROLL REVEALS ──
+    function initReveals() {
+      gsap.utils.toArray('.reveal').forEach(el => {
+        gsap.from(el, { y:50, opacity:0, duration:0.9, ease:'power3.out',
+          scrollTrigger: { trigger:el, start:'top 88%' } });
+      });
+      gsap.utils.toArray('.reveal-left').forEach(el => {
+        gsap.from(el, { x:-60, opacity:0, duration:0.9, ease:'power3.out',
+          scrollTrigger: { trigger:el, start:'top 85%' } });
+      });
+      gsap.utils.toArray('.reveal-right').forEach(el => {
+        gsap.from(el, { x:60, opacity:0, duration:0.9, ease:'power3.out',
+          scrollTrigger: { trigger:el, start:'top 85%' } });
+      });
+    }
+
+    // ── COUNTERS ──
+    function initCounters() {
+      document.querySelectorAll('.counter').forEach(el => {
+        const target = parseInt(el.dataset.target);
+        ScrollTrigger.create({
+          trigger: el, start:'top 90%', once:true,
+          onEnter: () => {
+            gsap.to({ val:0 }, {
+              val: target, duration:2, ease:'power2.out',
+              onUpdate: function() { el.textContent = Math.round(this.targets()[0].val); }
+            });
+          }
+        });
+      });
+    }
+
+    // ── PARALLAX ──
+    function initParallax() {
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+        gsap.to('.mouse-layer-1', { x: x*12, y: y*10, duration:1.2, ease:'power2.out' });
+        gsap.to('.mouse-layer-2', { x: x*22, y: y*18, duration:1.6, ease:'power2.out' });
+      });
+    }
+
+    // ── MAGNETIC ──
+    function initMagnetic() {
+      document.querySelectorAll('.magnetic').forEach(btn => {
+        btn.addEventListener('mousemove', (e) => {
+          const r = btn.getBoundingClientRect();
+          gsap.to(btn, {
+            x: (e.clientX - r.left - r.width/2) * 0.4,
+            y: (e.clientY - r.top - r.height/2) * 0.4,
+            duration:0.4, ease:'power2.out'
+          });
+        });
+        btn.addEventListener('mouseleave', () => {
+          gsap.to(btn, { x:0, y:0, duration:0.7, ease:'elastic.out(1,0.4)' });
+        });
+      });
+    }
+
+    // ── GALLERY DRAG SCROLL ──
+    function initGallery() {
+      const el = document.getElementById('gallery-scroll');
+      if (!el) return;
+      let isDown=false, startX, sl;
+      el.addEventListener('mousedown', e => { isDown=true; startX=e.pageX-el.offsetLeft; sl=el.scrollLeft; });
+      el.addEventListener('mouseleave', () => isDown=false);
+      el.addEventListener('mouseup', () => isDown=false);
+      el.addEventListener('mousemove', e => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - el.offsetLeft;
+        el.scrollLeft = sl - (x - startX) * 1.5;
+      });
+    }
+
+    // ── INIT ──
+    document.addEventListener('DOMContentLoaded', () => {
+      gsap.registerPlugin(ScrollTrigger);
+      renderMenu('Entradas');
+      initTabs();
+      initNav();
+      initHero();
+      initReveals();
+      initCounters();
+      initGallery();
+
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        initParallax();
+        initMagnetic();
+      }
+    });
+  </script>
+</body>
+</html>
