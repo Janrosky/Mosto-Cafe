@@ -45,8 +45,8 @@ El objetivo del sitio es mostrar cómo una marca gastronómica puede comunicar i
  
 ## 🚀 Demo
  
-Abrí el archivo `index.html` directamente en tu navegador. No requiere servidor ni instalación.
- 
+Abrí el link https://mosto-cafe.vercel.app/ directamente en tu navegador. No requiere servidor ni instalación.
+O también:
 ```bash
 # Solo clona y abre
 git clone https://github.com/tu-usuario/mosto-landing.git
